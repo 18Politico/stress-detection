@@ -1,24 +1,25 @@
 import os.path
 import pickle
 import numpy as np
+import re
 from paths import *
 
 
 class DataManager:
-    # TODO implementare espressione regolare per trovare le cartelle
-    SUBJECTS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     def load_data(self):
-        # TODO fixxare sovrascrittura dei dati
-        for subject in self.SUBJECTS:
-            data = self._load_subject_data(subject)
-            data = self._extract_accelerometer(data)
-            data = self._reformat_dictionary(data)
-            data = self._resample_data(data)
-            return data
+        for d in os.listdir(WESAD_DIRECTORY):
+            if re.match('S[0-9]', d):
+                current_S = os.path.join(WESAD_DIRECTORY, d)
+                print(current_S)
+                current_pkl = os.path.join(current_S, d + '.pkl')
+                data = self._load_subject_data(current_pkl)
+                data = self._extract_accelerometer(data)
+                data = self._reformat_dictionary(data)
+                data = self._resample_data(data)
+                return data
 
-    def _load_subject_data(self, subject):
-        pickle_file_path = os.path.join(WESAD_DIRECTORY, f'S{subject}', f'S{subject}.pkl')
+    def _load_subject_data(self, pickle_file_path):
         with open(pickle_file_path, 'rb') as file:
             return pickle.load(file)
 
