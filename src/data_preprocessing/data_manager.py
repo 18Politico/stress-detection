@@ -26,6 +26,8 @@ class DataManager:
     EMPATICA_SIGNALS = ['empatica_x', 'empatica_y', 'empatica_z', 'empatica_bvp',
                         'empatica_eda', 'empatica_temperature']
 
+    RESAMPLING_RATE = 64
+
     # Label values defined in the WESAD readme
     BASELINE = 1
     STRESS = 2
@@ -54,12 +56,8 @@ class DataManager:
             self._split_data(dictionary)
             self._extract_features(dictionary)
             dictionary['label'] = np.array(
-                [lbl[-1] for lbl in dictionary['label'].reshape(int(len(dictionary['label']) / 64), 64)]).reshape(-1)
+                [lbl[-1] for lbl in dictionary['label'].reshape(int(len(dictionary['label']) / self.RESAMPLING_RATE), self.RESAMPLING_RATE)]).reshape(-1)
         return data
-
-    def prepare_to_preprocessing(self, data):
-        self._reformat_raw_data(data)
-        return self._merge_dictionaries(data)
 
     def _upsample(self, signals, original_hz, target_hz):
         padding_length = target_hz - original_hz
@@ -67,32 +65,7 @@ class DataManager:
         upsampled_signals = []
         for s in signals:
             upsampled_signals.append(list(s) + padding)
-
-        '''upsampled_signals = []
-        padding_length = target_hz - original_hz
-        padding_per_value = padding_length // original_hz
-        remaining_padding = padding_length % original_hz
-
-        for signal in signals:
-            upsampled_signal = []
-            for value in signal:
-                upsampled_signal.append(value)
-                upsampled_signal.extend([0] * padding_per_value)
-                if remaining_padding > 0:
-                    upsampled_signal.append(0)
-                    remaining_padding -= 1
-            upsampled_signals.append(upsampled_signal)'''
-
         return np.array(upsampled_signals).reshape(-1)
-
-    ''' 
-     for i, dictionary in enumerate(data):
-         dictionary = self._reformat_data(dictionary)
-         dictionary = self._resample(dictionary, 32)
-         dictionary = self._drop_unnecessary_records(dictionary)
-         dictionary = self._normalize(dictionary)
-         data[i] = dictionary
-     return self._merge_dictionaries(data)'''
 
     def _load_subject_data(self, pickle_file_path):
         with open(pickle_file_path, 'rb') as file:
@@ -149,9 +122,9 @@ class DataManager:
                 new_shape = (int(len(v) / self.FREQUENCIES[k]), self.FREQUENCIES[k])
                 v = np.reshape(v, new_shape)
                 if k in self.EMPATICA_SIGNALS:
-                    v = self._upsample(v, self.FREQUENCIES[k], 64)
+                    v = self._upsample(v, self.FREQUENCIES[k], self.RESAMPLING_RATE)
                 elif k in self.RESIBAN_SIGNALS:
-                    v = self._downsample(v, self.FREQUENCIES[k], 64)
+                    v = self._downsample(v, self.FREQUENCIES[k], self.RESAMPLING_RATE)
                 dictionary.update({k: v})
         return dictionary
 
@@ -166,7 +139,7 @@ class DataManager:
         return dictionary'''
 
     def _downsampling_labels(self, labels):
-        return np.array([lbl[:64] for lbl in labels.reshape(int(len(labels) / 700), 700)]).reshape(-1)
+        return np.array([lbl[:self.RESAMPLING_RATE] for lbl in labels.reshape(int(len(labels) / 700), 700)]).reshape(-1)
 
     def _normalize(self, dictionary):
         scaler = MinMaxScaler()
@@ -222,7 +195,7 @@ class DataManager:
 
     def _extract_features(self, dictionary):
         for s in self.RESIBAN_SIGNALS + self.EMPATICA_SIGNALS:
-            features = self._sliding_window(dictionary[s], 64, 64)
+            features = self._sliding_window(dictionary[s], self.RESAMPLING_RATE, self.RESAMPLING_RATE)
             dictionary[f'{s}_mean'] = features[0]
             dictionary[f'{s}_variance'] = features[1]
             dictionary[f'{s}_std'] = features[2]
