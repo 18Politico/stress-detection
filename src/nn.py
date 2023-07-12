@@ -13,7 +13,7 @@ import tensorflow as tf
 
 bound = 18
 
-excluded = 6
+excluded = 17
 
 def regroup_data(wesad_dict: dict) -> dict:
     new_wesad_dict = dict()
@@ -136,22 +136,35 @@ if __name__ == '__main__':
     model = Sequential()
 
     '''kernel_regularizer=regularizers.l2(0.01)'''
-    model.add(Dense(512, activation='relu',  input_dim=40))
-    model.add(Dropout(0.5))
-    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(512, activation='relu',  input_dim=40))
     # model.add(Dropout(0.5))
-    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(384, activation='relu', input_dim=40))  # , kernel_regularizer=regularizers.l2(0.01)))
     # model.add(Dropout(0.5))
-    model.add(Dense(256, activation='relu')) #, kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dropout(0.5)) #########
-    model.add(Dense(128, activation='relu')) #, , kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu')) #, , kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dropout(0.5))
-    model.add(Dense(32, activation='relu')) #, , kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dropout(0.5))
-    model.add(Dense(8, activation='relu')) #, , kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dropout(0.5)) #tolto
+    # model.add(Dense(256, activation='relu', input_dim=40)) #, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.3)) #########
+    # model.add(Dense(192, activation='relu'))  # , , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.3))
+    # model.add(Dense(128, activation='relu', input_dim=40)) #, , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.3))
+    # model.add(Dense(96, activation='relu'))#, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.3))
+
+    # model.add(Dense(64, activation='relu', input_dim=40))#, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(56, activation='relu', input_dim=40))  # , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    model.add(Dense(48, activation='relu', input_dim=40))  # , kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))
+    model.add(Dense(40, activation='relu'))  # , kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))
+    model.add(Dense(32, activation='relu'))#, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))
+    model.add(Dense(24, activation='relu'))  # , kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))
+    model.add(Dense(16, activation='relu'))#, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2))  # tolto
+    model.add(Dense(8, activation='relu'))#, kernel_regularizer=regularizers.l2(0.01)))
+    model.add(Dropout(0.2)) #tolto
     model.add(Dense(4, activation='softmax'))
 
     early_stopping = EarlyStopping(monitor='val_loss', patience=5)
@@ -187,24 +200,41 @@ if __name__ == '__main__':
     #
     # #SHUFFLE
     #
-    # # indices = np.arange(len(labels))
-    # #
-    # # random.shuffle(list(indices))
-    # #
-    # # labels = np.array([labels[i] for i in indices])
-    # #
-    # # input_data = input_data[indices]
+    # indices = np.arange(len(labels))
+    #
+    # random.shuffle(list(indices))
+    #
+    # labels = np.array([labels[i] for i in indices])
+    #
+    # input_data = input_data[indices]
     #
     # x_train, x_test, y_train, y_test = train_test_split(input_data, labels, test_size=0.2, random_state=42)
     #
+    # #split int training and validation
+    # x_train, x_validation, y_train, y_validation = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+    #
     # # model.fit(x_train, y_train, epochs=50, batch_size=32, validation_data=(x_test, y_test))
     #
-    # model.fit(x_train, y_train,
-    #             epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_test, y_test))
+    # history = model.fit(x_train, y_train,
+    #             epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_validation, y_validation))
+    #
+    # # Extract training accuracy and validation accuracy
+    # train_acc = history.history['accuracy']
+    # val_acc = history.history['val_accuracy']
+    #
+    # # Plot training accuracy and validation accuracy
+    # epochs = range(1, len(train_acc) + 1)
+    # plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+    # plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+    # plt.title('Training and Validation Accuracy')
+    # plt.xlabel('Epochs')
+    # plt.ylabel('Accuracy')
+    # plt.legend()
+    # plt.show()
     #
     # loss, accuracy = model.evaluate(input_data, labels)
     #
-    # predictions = model.predict(input_data)
+    # #predictions = model.predict(input_data)
     #
     # print("input data:\n" + str(np.array(input_data).shape))
     #
@@ -247,18 +277,18 @@ if __name__ == '__main__':
         #split int training and validation
         x_train, x_validation, y_train, y_validation = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
 
-        historiy = model.fit(x_train, y_train,
-                  epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_validation, y_validation))
+        history = model.fit(x_train, y_train,
+                            epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_validation, y_validation))
 
         # Extract training accuracy and validation accuracy
-        train_acc = historiy.history['accuracy']
-        val_acc = historiy.history['val_accuracy']
+        train_acc = history.history['accuracy']
+        val_acc = history.history['val_accuracy']
 
         # Plot training accuracy and validation accuracy
         epochs = range(1, len(train_acc) + 1)
         plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
         plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
-        plt.title(subject_key + 'Training and Validation Accuracy')
+        plt.title(subject_key + ' Training and Validation Accuracy')
         plt.xlabel('Epochs')
         plt.ylabel('Accuracy')
         plt.legend()
