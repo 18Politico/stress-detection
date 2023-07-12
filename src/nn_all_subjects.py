@@ -135,7 +135,25 @@ if __name__ == '__main__':
 
     model = Sequential()
 
-    model.add(Dense(48, activation='relu', input_dim=40))# , kernel_regularizer=regularizers.l2(0.01)))
+    '''kernel_regularizer=regularizers.l2(0.01)'''
+    # model.add(Dense(512, activation='relu',  input_dim=40))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(384, activation='relu', input_dim=40))  # , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.5))
+
+    # model.add(Dense(256, activation='relu', input_dim=40)) #, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2)) #########
+    # model.add(Dense(192, activation='relu'))  # , , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(128, activation='relu')) #, , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(96, activation='relu')) #, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(64, activation='relu', input_dim=40)) #, kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    # model.add(Dense(56, activation='relu')) # , kernel_regularizer=regularizers.l2(0.01)))
+    # model.add(Dropout(0.2))
+    model.add(Dense(48, activation='relu', input_dim=40)) # , kernel_regularizer=regularizers.l2(0.01)))
     model.add(Dropout(0.2))
     model.add(Dense(40, activation='relu'))  # , kernel_regularizer=regularizers.l2(0.01)))
     model.add(Dropout(0.2))
@@ -162,8 +180,6 @@ if __name__ == '__main__':
             continue
         subject_key = 'S' + str(subject)
         subject_dict = dict(normalized_wesad[subject_key])
-        input_data = np.empty(0)
-        labels = np.empty(0)
         for output_key, output_dict in subject_dict.items():
             labels_to_add = np.array(output_dict['labels'])
             input_to_add = np.empty(0)
@@ -171,49 +187,58 @@ if __name__ == '__main__':
                 for stat_name, stat_values in dict(data_stats_dict).items():
                     input_to_add = np.concatenate((input_to_add, stat_values), axis=0)
 
+            #transpose = np.transpose(input_to_add)
+
             #input_data = np.concatenate((input_data, np.transpose(input_to_add)), axis=0)
 
             input_data = np.concatenate((input_data, input_to_add), axis=0)
 
             labels = np.append(labels, labels_to_add)
 
-        input_data = input_data.reshape((40, labels.shape[0]))
-        input_data = np.transpose(input_data)
+    input_data = input_data.reshape((40, labels.shape[0]))
+    input_data = np.transpose(input_data)
 
-        indices = np.arange(len(labels))
+    #SHUFFLE
 
-        random.shuffle(list(indices))
+    indices = np.arange(len(labels))
 
-        labels = np.array([labels[i] for i in indices])
+    random.shuffle(list(indices))
 
-        input_data = input_data[indices]
+    labels = np.array([labels[i] for i in indices])
 
-        #split into training and testing
-        x_train, x_test, y_train, y_test = train_test_split(input_data, labels, test_size=0.2, random_state=42)
+    input_data = input_data[indices]
 
-        #split int training and validation
-        x_train, x_validation, y_train, y_validation = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+    x_train, x_test, y_train, y_test = train_test_split(input_data, labels, test_size=0.2, random_state=42)
 
-        history = model.fit(x_train, y_train,
-                            epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_validation, y_validation))
+    #split int training and validation
+    x_train, x_validation, y_train, y_validation = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
 
-        # Extract training accuracy and validation accuracy
-        train_acc = history.history['accuracy']
-        val_acc = history.history['val_accuracy']
+    # model.fit(x_train, y_train, epochs=50, batch_size=32, validation_data=(x_test, y_test))
 
-        # Plot training accuracy and validation accuracy
-        epochs = range(1, len(train_acc) + 1)
-        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
-        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
-        plt.title(subject_key + ' Training and Validation Accuracy')
-        plt.xlabel('Epochs')
-        plt.ylabel('Accuracy')
-        plt.legend()
-        #plt.show()
+    history = model.fit(x_train, y_train,
+                epochs=100, callbacks=[early_stopping], batch_size=32, validation_data=(x_validation, y_validation))
 
-        loss, accuracy = model.evaluate(x_test, y_test)
+    # Extract training accuracy and validation accuracy
+    train_acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
 
-        #predictions = model.predict(input_data)
+    # Plot training accuracy and validation accuracy
+    epochs = range(1, len(train_acc) + 1)
+    plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+    plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+    plt.title('Training and Validation Accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+
+    loss, accuracy = model.evaluate(x_test, y_test)
+
+    #predictions = model.predict(input_data)
+
+    #print("input data:\n" + str(np.array(input_data).shape))
+
+    #print("labels:\n" + str(np.array(labels).shape))
 
     print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++FINE_TRAINING')
 
