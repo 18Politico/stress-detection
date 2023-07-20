@@ -1,7 +1,6 @@
 import os.path
 import pickle
 import numpy as np
-import tensorflow as tf
 import random
 import re
 from keras import Sequential
@@ -58,7 +57,6 @@ class DataManager:
     def set_random_seed(self):
         # Set seed values
         np.random.seed(self.SEED_VALUE)
-        tf.random.set_seed(self.SEED_VALUE)
         random.seed(self.SEED_VALUE)
 
     def load_raw_data(self):
