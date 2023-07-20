@@ -163,6 +163,60 @@ class DataManager:
                   callbacks=[early_stopping])
         return model.evaluate(x_validation, y_validation)
 
+    def _retrieve_indexes(self, dictionary, mask):
+        result = {}
+        for key, array in dictionary.items():
+            result[key] = dictionary[key][mask]
+        return result
+
+    def _upsample(self, signals, original_hz, target_hz):
+        padding_length = target_hz - original_hz
+        padding = [0] * padding_length
+        upsampled_signals = []
+        for s in signals:
+            upsampled_signals.append(list(s) + padding)
+        return np.array(upsampled_signals).reshape(-1)
+
+    def _load_subject_data(self, pickle_file_path):
+        with open(pickle_file_path, 'rb') as file:
+            return pickle.load(file)
+
+    def _extract_accelerometer(self, dictionary):
+        # extract respiban accelerometer entries
+        respiban_acc = dictionary['signal']['chest']['ACC']
+        respiban_x = np.array([[accelerometer[0]] for accelerometer in respiban_acc])
+        respiban_y = np.array([[accelerometer[1]] for accelerometer in respiban_acc])
+        respiban_z = np.array([[accelerometer[2]] for accelerometer in respiban_acc])
+        dictionary['signal']['chest'] |= {'respiban_x': respiban_x}
+        dictionary['signal']['chest'] |= {'respiban_y': respiban_y}
+        dictionary['signal']['chest'] |= {'respiban_z': respiban_z}
+        del dictionary['signal']['chest']['ACC']
+        # extract empatica accelerometer entries
+        empatica_acc = dictionary['signal']['wrist']['ACC']
+        empatica_x = np.array([[accelerometer[0]] for accelerometer in empatica_acc])
+        empatica_y = np.array([[accelerometer[1]] for accelerometer in empatica_acc])
+        empatica_z = np.array([[accelerometer[2]] for accelerometer in empatica_acc])
+        dictionary['signal']['wrist'] |= {'empatica_x': empatica_x}
+        dictionary['signal']['wrist'] |= {'empatica_y': empatica_y}
+        dictionary['signal']['wrist'] |= {'empatica_z': empatica_z}
+        del dictionary['signal']['wrist']['ACC']
+
+    def _resample(self, dictionary):
+        # downsampling labels
+        dictionary.update({'label': self._downsampling_labels(dictionary['label'])})
+        # resample
+        for k, v in dictionary.items():
+            if k != 'label' and k != 'subject':
+                # reshape all signals with their respective original frequencies
+                new_shape = (int(len(v) / self.FREQUENCIES[k]), self.FREQUENCIES[k])
+                v = np.reshape(v, new_shape)
+                if k in self.EMPATICA_SIGNALS:
+                    v = self._upsample(v, self.FREQUENCIES[k], self.RESAMPLING_RATE)
+                elif k in self.RESIBAN_SIGNALS:
+                    v = self._downsample(v, self.FREQUENCIES[k], self.RESAMPLING_RATE)
+                dictionary.update({k: v})
+        return dictionary
+
     def _downsampling_labels(self, labels):
         return np.array([lbl[:self.RESAMPLING_RATE] for lbl in labels.reshape(int(len(labels) / 700), 700)]).reshape(-1)
 
