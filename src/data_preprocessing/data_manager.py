@@ -164,4 +164,54 @@ class DataManager:
         model.fit(x, y, validation_data=(x_validation, y_validation), batch_size=self.BATCH_SIZE, epochs=self.EPOCHS,
                   callbacks=[early_stopping])
         return model.evaluate(x_validation, y_validation)
-      
+
+    def _downsampling_labels(self, labels):
+        return np.array([lbl[:self.RESAMPLING_RATE] for lbl in labels.reshape(int(len(labels) / 700), 700)]).reshape(-1)
+
+    def _normalize(self, dictionary):
+        scaler = MinMaxScaler()
+        for k, v in dictionary.items():
+            # skip label normalization
+            if k != 'label' and k != 'subject':
+                # normalize in a range between 0 and 1 all signals
+                normalized_signal = scaler.fit_transform(v.reshape(-1, 1))
+                dictionary.update({k: normalized_signal.reshape(-1)})
+
+    def _drop_unnecessary_records(self, dictionary):
+        useful_indexes = np.nonzero(np.isin(dictionary['label'], [1, 2, 3, 4]))
+        for k, v in dictionary.items():
+            if k != 'subject':
+                dictionary.update({k: v[useful_indexes]})
+
+    def _merge_dictionaries(self, data):
+        merged_dict = {key: np.empty((0,)) for key in self.DICTIONARY_KEYS}
+        for dictionary in data:
+            for key, value in dictionary.items():
+                merged_dict[key] = np.concatenate((merged_dict[key], value))
+        return merged_dict
+
+    def _downsample(self, signals, original_hz, target_hz):
+        scaling_factor = original_hz / target_hz
+        downsampled_signals = []
+        for s in signals:
+            downsampled_signals.append(signal.decimate(s, round(scaling_factor)))
+        return np.array(downsampled_signals).reshape(-1)
+
+    def _split_data(self, dictionary, stress_data, no_stress_data):
+        stress_indexes = np.nonzero(np.isin(dictionary['label'], [1]))
+        no_stress_indexes = np.nonzero(np.isin(dictionary['label'], [0]))
+        stress_dict = dict()
+        no_stress_dict = dict()
+
+        for s in self.DICTIONARY_KEYS:
+            stress_dict[s] = dictionary[s][stress_indexes]
+            no_stress_dict[s] = dictionary[s][no_stress_indexes]
+            stress_data |= stress_dict
+            no_stress_data |= no_stress_dict
+        return stress_data, no_stress_data
+
+    def _map_labels_to_binary_case(self, dictionary):
+        mapping = {1: self.BINARY_NO_STRESS, 2: self.BINARY_STRESS, 3: self.BINARY_NO_STRESS, 4: self.BINARY_NO_STRESS}
+        dictionary['label'] = np.array([mapping.get(label, label) for label in dictionary['label']])
+        return dictionary
+
