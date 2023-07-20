@@ -180,6 +180,28 @@ class DataManager:
 
         return model.evaluate(x_validation, y_validation)
 
+    def _compute_spectogram(self, dictionary, sequence_length):
+        labels = dictionary['label']
+        del dictionary['label']
+        x = []
+        tmp = np.column_stack(list(dictionary.values()))
+        # adds signals in groups of 'sequence_length'
+        i = 0  # Initialize the index
+        while i + sequence_length <= len(tmp):
+            spectogram = tmp[i:i + sequence_length]
+            spectogram = np.transpose(spectogram)
+            spectogram = np.concatenate(spectogram)
+            freqs, times, spectogram = signal.spectrogram(spectogram, fs=self.RESAMPLING_RATE, window='hann',
+                                                          nperseg=sequence_length)
+            x.append(spectogram)
+            # Increment the index by the jump value
+            i += sequence_length
+        x = np.array(x)
+        y = np.repeat(labels[0], x.shape[0])
+        # add back labels
+        dictionary['label'] = labels
+        return x, y
+
     def _retrieve_indexes(self, dictionary, mask):
         result = {}
         for key, array in dictionary.items():
