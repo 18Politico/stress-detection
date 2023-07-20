@@ -10,6 +10,7 @@ from keras.optimizers import Adam
 from keras.regularizers import l2
 from sklearn.preprocessing import MinMaxScaler
 from scipy import signal
+import matplotlib.pyplot as plt
 
 ROOT_DIRECTORY = os.path.dirname(os.path.dirname(os.path.dirname(os.path.join(os.path.abspath(__file__)))))
 WESAD_DIRECTORY = os.path.join(ROOT_DIRECTORY, 'dataset', 'WESAD')
@@ -159,8 +160,24 @@ class DataManager:
                                        restore_best_weights=True)
 
         # Train the model
-        model.fit(x, y, validation_data=(x_validation, y_validation), batch_size=self.BATCH_SIZE, epochs=self.EPOCHS,
-                  callbacks=[early_stopping])
+        history = model.fit(x, y, validation_data=(x_validation, y_validation), batch_size=self.BATCH_SIZE,
+                            epochs=self.EPOCHS,
+                            callbacks=[early_stopping])
+
+        # Extract training accuracy and validation accuracy
+        train_acc = history.history['accuracy']
+        val_acc = history.history['val_accuracy']
+
+        # Plot training accuracy and validation accuracy
+        epochs = range(1, len(train_acc) + 1)
+        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
+        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
+        plt.title('Training and Validation Accuracy')
+        plt.xlabel('Epochs')
+        plt.ylabel('Accuracy')
+        plt.legend()
+        plt.show()
+
         return model.evaluate(x_validation, y_validation)
 
     def _retrieve_indexes(self, dictionary, mask):
