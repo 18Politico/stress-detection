@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 import random
 import re
+import tensorflow as tf
 from keras import Sequential
 from keras.callbacks import EarlyStopping
 from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense, BatchNormalization
@@ -132,7 +133,7 @@ class DataManager:
         x = (x - np.mean(x)) / np.std(x)
         return x, y
 
-    def train_cnn(self, x, y, x_validation, y_validation, input_shape):
+    def train_cnn(self, x, y, x_validation, y_validation, input_shape, subject):
         # Define the CNN model
         model = Sequential()
         model.add(Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
@@ -151,7 +152,7 @@ class DataManager:
         model.add(Dense(1, activation='sigmoid'))
 
         # Compile the model
-        model.compile(optimizer=Adam(learning_rate=self.LEARNING_RATE),
+        model.compile(optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=self.LEARNING_RATE),
                       loss='binary_crossentropy',
                       metrics=['accuracy'])
 
@@ -163,18 +164,20 @@ class DataManager:
         history = model.fit(x, y, validation_data=(x_validation, y_validation), batch_size=self.BATCH_SIZE,
                             epochs=self.EPOCHS,
                             callbacks=[early_stopping])
-
+        train_loss = history.history['loss']
+        val_loss = history.history['val_loss']
         # Extract training accuracy and validation accuracy
-        train_acc = history.history['accuracy']
-        val_acc = history.history['val_accuracy']
+        # train_acc = history.history['accuracy']
+        # val_acc = history.history['val_accuracy']
 
         # Plot training accuracy and validation accuracy
-        epochs = range(1, len(train_acc) + 1)
-        plt.plot(epochs, train_acc, 'b', label='Training Accuracy')
-        plt.plot(epochs, val_acc, 'r', label='Validation Accuracy')
-        plt.title('Training and Validation Accuracy')
+        epochs = range(1, len(train_loss) + 1)
+        plt.plot(epochs, train_loss, 'b', label='Training Loss')
+        plt.plot(epochs, val_loss, 'r', label='Validation Loss')
+        plt.title(f'Training and Validation Loss for {subject} Subject')
         plt.xlabel('Epochs')
-        plt.ylabel('Accuracy')
+        plt.ylabel('Loss')
+        plt.ylim(0, 3)  # Adjust these values to your desired range
         plt.legend()
         plt.show()
 
@@ -305,4 +308,3 @@ class DataManager:
         mapping = {1: self.BINARY_NO_STRESS, 2: self.BINARY_STRESS, 3: self.BINARY_NO_STRESS, 4: self.BINARY_NO_STRESS}
         dictionary['label'] = np.array([mapping.get(label, label) for label in dictionary['label']])
         return dictionary
-
